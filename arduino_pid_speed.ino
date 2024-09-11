@@ -10,6 +10,7 @@ const byte pin_pwm = 6; // for H-bridge: motor speed
 int encoder = 0;
 int m_direction = 0;
 double set_speed = 0;  // Desired motor speed
+double smoothed_speed = 0; // Smoothed speed for soft start
 double pv_speed = 0;   // Current motor speed (from encoder)
 
 double kp = 1.0, ki = 0.0, kd = 0.0;  // PID constants (default values)
@@ -17,6 +18,9 @@ double e_speed = 0, e_speed_pre = 0, e_speed_sum = 0;  // PID errors
 double pwm_pulse = 0;  // PWM output (0-255)
 
 int timer1_counter;  // For timer setup
+
+// Exponential smoothing factor
+double alpha = 0.1;  // Smoothing factor (0 < alpha <= 1)
 
 void setup() {
   pinMode(pin_a, INPUT_PULLUP);
@@ -66,9 +70,12 @@ void loop() {
     }
   }
 
+  // Apply exponential smoothing to set_speed
+  smoothed_speed = alpha * set_speed + (1 - alpha) * smoothed_speed;
+
   // PID control logic
   if (motor_start) {
-    e_speed = set_speed - pv_speed;
+    e_speed = smoothed_speed - pv_speed;
     pwm_pulse = e_speed * kp + e_speed_sum * ki + (e_speed - e_speed_pre) * kd;
     e_speed_pre = e_speed;  // Update previous error
     e_speed_sum += e_speed; // Accumulate error
