@@ -17,14 +17,21 @@ kd = 0.1  # Derivative gain
 previous_error = 0  # Store the last error for the derivative term
 integral = 0  # Accumulated error for the integral term
 
+# Exponential smoothing factor
+alpha = 0.3  # Smoothing factor (0 < alpha <= 1)
+smoothed_speed = 0  # Smoothed speed
+
 # Functions to simulate PID-controlled motor
 def pid_control():
-    global motor_running, current_speed, set_speed_value, previous_error, integral, motor_speed
+    global motor_running, current_speed, set_speed_value, previous_error, integral, motor_speed, smoothed_speed
 
     while True:
         if motor_running:
+            # Apply exponential smoothing to set_speed_value
+            smoothed_speed = alpha * set_speed_value + (1 - alpha) * smoothed_speed
+
             # Calculate the error
-            error = set_speed_value - current_speed
+            error = smoothed_speed - current_speed
 
             # Proportional term
             p_term = kp * error
